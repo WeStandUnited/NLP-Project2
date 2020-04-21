@@ -22,15 +22,19 @@ def compute_transition_weights(trans_counts, smoothing):
 
     """
     weights = defaultdict(float)
-    
-
     all_tags = list(trans_counts.keys()) + [END_TAG]
 
-    raise NotImplementedError
+    for k in trans_counts:
+        v = trans_counts[k]
+        v_total = len(list(v.elements()))
+        for tag in all_tags:
+            if tag == START_TAG:
+                weights[(tag, k)] = -np.inf
+            else:
+                weights[(tag, k)] = np.log(v[tag] + smoothing) - np.log(v_total + (len(all_tags) * smoothing))
 
 
     return weights
-    raise NotImplementedError
 
 
 def compute_weights_variables(nb_weights, hmm_trans_weights, vocab, word_to_ix, tag_to_ix):

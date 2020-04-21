@@ -6,6 +6,21 @@ import pickle
 class CBOW(torch.nn.Module):
     #6.2
     def __init__(self, vocab_size, embedding_dim):
+        super(CBOW, self).__init__()
+
+        # out: 1 x emdedding_dim
+        self.embeddings = nn.Embedding(vocab_size, embedding_dim)
+
+        self.linear1 = nn.Linear(embedding_dim, 128)
+
+        self.activation_function1 = nn.ReLU()
+
+        # out: 1 x vocab_size
+        self.linear2 = nn.Linear(128, vocab_size)
+
+        self.activation_function2 = nn.LogSoftmax(dim=-1)
+
+    #6.3 def __init__(self, vocab_size, embedding_dim):
         """
         Initializes the components of the CBOW model.
         
@@ -14,24 +29,23 @@ class CBOW(torch.nn.Module):
         """
         super(CBOW, self).__init__()
 
-        #self.embeddings = 
+        #self.embeddings =
 
-        #self.linear1 = 
-        #self.activation_function1 = 
+        #self.linear1 =
+        #self.activation_function1 =
 
-        #self.linear2 = 
-        #self.activation_function2 = 
-        
+        #self.linear2 =
+        #self.activation_function2 =
+
         raise NotImplementedError
-    #6.3
+
     def forward(self, inputs):
-        """
-        The function obtain the probabilities for each word given context.
-        
-        :param inputs: a context tensor (first part of the tuple from make_context_tensors)
-        :returns: probabilities for each token in the vocabulary (output of log softmax)
-        """
-        raise NotImplementedError
+        embeds = sum(self.embeddings(inputs)).view(1,-1)
+        x = self.linear1(embeds)
+        x = self.activation_function1(x)
+        x = self.linear2(x)
+        x = self.activation_function2(x)
+        return x
 
     def get_word_embedding(self, word, word_to_ix):
         word = torch.LongTensor([word_to_ix[word]])
@@ -43,16 +57,25 @@ def build_context(documents, context_size=2):
     build context vectors of context_size for each document in documents.
 
     :param documents: list of tokenized documents (i.e., a list of lists of tokens)
+
     :param context_size: number of context tokens on each side of a token.
+
     :returns: context_vectors
     :rtype: list of (list, string) pairs, where the list contains the context_size 
             tokens before and after the string (token).
     """
-    
+
     context_vectors = []
-    
-    raise NotImplementedError
-    
+
+    print(documents)
+
+
+
+
+
+    return context_vectors
+
+
 def make_context_tensors(context_vectors, word_to_ix, device="cpu"):
     """
     convert context vectors into tensors of word indices. 

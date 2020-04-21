@@ -35,40 +35,36 @@ class BiLSTM(nn.Module):
     """
     Class for the BiLSTM model tagger
     """
-    
+
     def __init__(self, vocab_size, tag_to_ix, embedding_dim, hidden_dim, embeddings=None):
         super(BiLSTM, self).__init__()
-        
+
         self.embedding_dim = embedding_dim
         self.hidden_dim = hidden_dim
         self.vocab_size = vocab_size
         self.tag_to_ix = tag_to_ix
-        self.ix_to_tag = {v:k for k,v in tag_to_ix.items()}
+        self.ix_to_tag = {v: k for k, v in tag_to_ix.items()}
         self.tagset_size = len(tag_to_ix)
-        
+
         """
         name them as following:
         self.word_embeds: embedding variable
         self.lstm: lstm layer
         self.hidden2tag: fully connected layer
         """
-        raise NotImplementedError
-        
-        #self.word_embeds = 
-        
+
+        self.word_embeds = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embedding_dim)
+
         if embeddings is not None:
-            if isinstance(embeddings, torch.nn.Embedding):
-                self.word_embeds = embeddings
-            else:
-                self.word_embeds.weight.data.copy_(torch.from_numpy(embeddings))
-        
-        # Maps the embeddings of the word into the hidden state. 
-        # In choosing hidden_size, remember this is a *bidirectional* LSTM!
-        #self.lstm = 
+            self.word_embeds.weight.data.copy_(torch.from_numpy(embeddings))
+
+        # Maps the embeddings of the word into the hidden state
+        self.lstm = nn.LSTM(input_size=embedding_dim, hidden_size=embedding_dim // 2, num_layers=1,
+                            bidirectional=True)
 
         # Maps the output of the LSTM into tag space.
-        #self.hidden2tag = 
-        
+        self.hidden2tag = nn.Linear(hidden_dim, self.tagset_size, bias=True)
+
         self.hidden = self.init_hidden()
 
     def init_hidden(self):
@@ -88,9 +84,11 @@ class BiLSTM(nn.Module):
         returns lstm_feats: scores for each tag for each token in the sentence.
         """
         self.hidden = self.init_hidden()
+        word_embeddings = self.word_embeds(sentence)
+        output, self.hidden = self.lstm.forward(word_embeddings.view(len(sentence), 1, -1), self.hidden)
+        tag_space = self.hidden2tag(output.view(len(sentence), -1))
 
-        raise NotImplementedError
-        
+        return tag_space
     
     
     def predict(self, sentence):

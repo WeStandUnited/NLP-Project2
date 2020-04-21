@@ -28,11 +28,18 @@ def viterbi_step(all_tags, tag_to_ix, cur_tag_scores, transition_scores, prev_sc
     
     parameters:
     - all_tags: list of all tags: includes both the START_TAG and END_TAG
+
     - tag_to_ix: a dictionary that maps each tag (including the START_TAG and the END_TAG) to a unique index.
+
     - cur_tag_scores: pytorch Variable that contains the local emission score for each tag for the current token in the sentence
-                       it's size is : [ len(all_tags) ] 
-    - transition_scores: pytorch Variable that contains the tag_transition_scores
-                        it's size is : [ len(all_tags) x len(all_tags) ] 
+                       it's size is : [ len(all_tags) ]
+
+    - transition_scores: pytorch Variable that contains the tag each tag for the previous token in the sentence:
+                    it's size is : [ 1 x len(all_tags) ]
+
+    :returns:_transition_scores
+                        it's size is : [ len(all_tags) x len(all_tags) ]
+
     - prev_scores: pytorch Variable that contains the scores for each tag for the previous token in the sentence: 
                     it's size is : [ 1 x len(all_tags) ] 
     
@@ -40,26 +47,42 @@ def viterbi_step(all_tags, tag_to_ix, cur_tag_scores, transition_scores, prev_sc
     - viterbivars: a list of pytorch Variables such that each element contains the score for each tag in all_tags for the current token in the sentence
     - bptrs: a list of idx that contains the best_previous_tag for each tag in all_tags for the current token in the sentence
     """
-    bptrs = []
-    viterbivars = []
-    # make sure end_tag exists in all_tags
+
+    # for next_tag in list(all_tags):
+    #     next_tag_ix = tag_to_ix[next_tag]
+    #     vec = prev_scores + transition_scores[next_tag_ix, :] + cur_tag_scores[next_tag_ix]
+    #     best_prev_tag_ix = argmax(vec)
+    #     viterbivars.append(prev_scores[0, best_prev_tag_ix] + transition_scores[next_tag_ix, best_prev_tag_ix] +
+    #                        cur_tag_scores[next_tag_ix])
+    #
+    #     bptrs.append(best_prev_tag_ix)
+
+    bptrs = []#back pointers
+    viterbivars = []#
+
     for next_tag in list(all_tags):
+        nextindex = tag_to_ix[next_tag]
 
+        score = prev_scores + transition_scores[nextindex, :] + cur_tag_scores[nextindex]
+        maxindex = argmax(score)
+        viterbivars.append(prev_scores[0, maxindex] + transition_scores[nextindex, maxindex] +
+                           cur_tag_scores[nextindex])
 
-        raise NotImplementedError
+        bptrs.append(maxindex)
 
     return viterbivars, bptrs
 
 def build_trellis(all_tags, tag_to_ix, cur_tag_scores, transition_scores):
     """
-    This function should compute the best_path and the path_score. 
+    This function should compute the best_path and the path_score.
     Use viterbi_step to implement build_trellis in viterbi.py in Pytorch.
     
     parameters:
     - all_tags: a list of all tags: includes START_TAG and END_TAG
     - tag_to_ix: a dictionary that maps each tag to a unique id.
     - cur_tag_scores: a list of pytorch Variables where each contains the local emission score for each tag for that particular token in the sentence, len(cur_tag_scores) will be equal to len(words)
-                        it's size is : [ len(words in sequence) x len(all_tags) ] 
+                        it's size is : [iable(torch.from_numpy(np.array(prev_scores, dtype=np.float32))).view(1, -1)
+        whole_bptrs.append(bptr len(words in sequence) x len(all_tags) ]
     - transition_scores: pytorch Variable (a matrix) that contains the tag_transition_scores
                         it's size is : [ len(all_tags) x len(all_tags) ] 
     
@@ -68,24 +91,35 @@ def build_trellis(all_tags, tag_to_ix, cur_tag_scores, transition_scores):
     - best_path: the actual best_path, which is the list of tags for each token: exclude the START_TAG and END_TAG here.
     """
     
-    ix_to_tag = {v: k for k, v in tag_to_ix.items()}
+    ix_to_tag = {v:k for k, v in tag_to_ix.items()}
 
     # setting all the initial score to START_TAG
     # make sure END_TAG is in all_tags
+
     initial_vec = np.full((1, len(all_tags)), -np.inf)
     initial_vec[0][tag_to_ix[START_TAG]] = 0
     prev_scores = torch.autograd.Variable(torch.from_numpy(initial_vec.astype(np.float32))).view(1, -1)
+
     whole_bptrs = []
-    for m in range(len(cur_tag_scores)): 
-        raise NotImplementedError
 
+    for cur_tag_score in cur_tag_scores:
+        prev_scores, bptrs = viterbi_step(all_tags, tag_to_ix, cur_tag_score, transition_scores, prev_scores)
+        prev_scores = torch.autograd.Variable(torch.from_numpy(np.array(prev_scores, dtype=np.float32))).view(1, -1)
+        whole_bptrs.append(bptrs)
 
-    # after you finish calculating the tags for all the words: don't forget to calculate the scores for the END_TAG
+    best_path = []
+    best_last_index = argmax(prev_scores)
+    path_score = prev_scores[0, best_last_index] + transition_scores[tag_to_ix[END_TAG], best_last_index]
+
+    whole_bptrs.reverse()
+    for bptrs in whole_bptrs:
+        best_path.append(ix_to_tag[best_last_index])
+        best_last_index = bptrs[best_last_index]
 
 
     # Calculate the best_score and also the best_path using backpointers and don't forget to reverse the path
 
 
-    return path_score, best_path
+    return path_score, list(reversed(best_path))
 
     

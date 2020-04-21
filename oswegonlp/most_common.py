@@ -124,7 +124,14 @@ def get_tag_trans_counts(input_file):
 
     tot_counts = defaultdict(lambda: Counter())
 
-    raise NotImplementedError
+    for index, (words, tags) in enumerate(conll_seq_generator(input_file)):
+        for index, tag in enumerate(tags):
+            if index == 0:
+                tot_counts[START_TAG].update([tag])
+            if index == len(tags) - 1:
+                tot_counts[tag].update([END_TAG])
+            else:
+                tot_counts[tag].update([tags[index + 1]])
 
     return dict(tot_counts)
 
